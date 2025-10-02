@@ -1590,14 +1590,17 @@ ENABLE_THIRD_GUEST=false
 ## Deployment
 
 ### Local Development Setup
+
+**IMPORTANT**: This project uses `.venv` as the standard virtual environment name. Always use `.venv` for consistency.
+
 ```bash
 # Clone repository
 git clone <repository-url>
 cd ai-podcast
 
-# Create virtual environment
-python3 -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
+# Create virtual environment (ALWAYS use .venv)
+python3 -m venv .venv
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 
 # Install dependencies
 pip install -r requirements-dev.txt

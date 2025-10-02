@@ -50,28 +50,33 @@ Based on the requirements and progress:
 
 ### Best Practices
 
-1. **Follow ADK Structure**: Use Google ADK's recommended folder structure
+1. **Use `.venv` Virtual Environment**: Always use `.venv` as the virtual environment for this project
+   - Create with: `python3 -m venv .venv`
+   - Activate with: `source .venv/bin/activate` (macOS/Linux) or `.venv\Scripts\activate` (Windows)
+   - Install dependencies: `pip install -r requirements.txt`
+
+2. **Follow ADK Structure**: Use Google ADK's recommended folder structure
    - Each agent in its own folder with `__init__.py` and `agent.py`
    - Keep backend, database, and UI components separated
 
-2. **Maintain Code Quality**:
+3. **Maintain Code Quality**:
    - Follow PEP 8 Python style guidelines
    - Add docstrings to functions and classes
    - Write clear, self-documenting code
    - Include type hints where appropriate
 
-3. **Test as You Go**:
+4. **Test as You Go**:
    - Write unit tests for new functions/classes
    - Test agent behavior with different inputs
    - Verify persona configurations load correctly
    - Test error handling scenarios
 
-4. **Document Changes**:
+5. **Document Changes**:
    - Update inline code comments
    - Update README if user-facing changes occur
    - Note any configuration changes needed
 
-5. **Version Control**:
+6. **Version Control**:
    - Make frequent, atomic commits
    - Write clear commit messages
    - Create feature branches for significant changes
@@ -101,16 +106,7 @@ Append a concise summary to `project_mangement/PROGRESS.MD` following this forma
 
 **Phase**: [Phase 1/2/3]
 
-**Summary**: Brief description of what was accomplished.
-
-**Changes**:
-- Key change or feature implemented
-- Another significant change
-- Configuration or dependency updates
-
-**Testing**: How the feature was tested and verified.
-
-**Notes**: Any important observations, blockers resolved, or future considerations.
+**Summary**: Brief 2-3 sentence description of what was accomplished and why it matters. Do NOT include testing information.
 
 ---
 ```
@@ -122,31 +118,18 @@ Append a concise summary to `project_mangement/PROGRESS.MD` following this forma
 
 **Phase**: Phase 1 - MVP
 
-**Summary**: Implemented the core orchestrator agent that manages podcast conversation flow and coordinates between host and guest agents.
-
-**Changes**:
-- Created `backend/agents/orchestrator/agent.py` with conversation flow logic
-- Implemented turn-taking algorithm for host and 2 guest agents
-- Added basic state management for conversation tracking
-- Integrated persona configuration loading from YAML files
-
-**Testing**: 
-- Unit tests for turn rotation logic
-- Manual testing with technology persona set
-- Verified conversation continues for 10+ turns
-
-**Notes**: Turn-taking works well with 2 guests. May need to refine for 3-guest scenarios in Phase 3.
+**Summary**: Implemented the core orchestrator agent that manages podcast conversation flow and coordinates between host and guest agents. Created the conversation flow logic, turn-taking algorithm for host and 2 guests, and integrated persona configuration loading from YAML files.
 
 ---
 ```
 
 ### 3. Keep PROGRESS.MD Succinct
 
-- Focus on **what** was done, not **how** (code details belong in comments/docs)
+- Keep entries to just 2-3 sentences maximum
+- Focus on **what** was accomplished and **why** it matters
+- **Do NOT include testing information** (testing details belong in commit messages)
 - Highlight **user-facing changes** and **architectural decisions**
-- Note **blockers resolved** and **lessons learned**
-- Keep entries brief (5-10 lines maximum)
-- Use bullet points for readability
+- Note **blockers resolved** and **lessons learned** only if significant
 
 ---
 
@@ -234,6 +217,10 @@ ai-podcast/
 ## Quick Reference Commands
 
 ```bash
+# Activate virtual environment
+source .venv/bin/activate  # macOS/Linux
+.venv\Scripts\activate      # Windows
+
 # Run tests
 pytest
 
