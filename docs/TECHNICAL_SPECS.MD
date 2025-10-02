@@ -813,13 +813,30 @@ guests:
 
 ### Loading Personas Programmatically
 
+This class will be implemented in `backend/persona/manager.py`:
+
 ```python
+# backend/persona/manager.py
 import yaml
 from pathlib import Path
 from typing import Dict, List
 
 class PersonaConfigManager:
+    """
+    Manages persona configurations and creates ADK agents dynamically.
+    
+    This manager loads persona YAML files and creates agents following
+    Google ADK's structure (each agent in its own folder with agent.py).
+    """
+    
     def __init__(self, config_dir: str = "personas"):
+        """
+        Initialize the PersonaConfigManager.
+        
+        Args:
+            config_dir: Path to persona configuration directory.
+                       Default is "personas" at project root.
+        """
         self.config_dir = Path(config_dir)
         self.persona_sets: Dict[str, Dict] = {}
         self.load_all_personas()
@@ -856,8 +873,21 @@ class PersonaConfigManager:
         return self.persona_sets[set_id]
     
     def create_agent_from_persona(self, persona_config: Dict, model: str = "gemini-2.5-flash"):
-        """Create an ADK Agent from persona configuration"""
-        from google.adk import Agent
+        """
+        Create an ADK Agent from persona configuration.
+        
+        Note: In the actual implementation, agents are defined in their own folders
+        (backend/agents/host_agent/agent.py, etc.) following Google ADK structure.
+        This method provides the configuration that will be used by those agent files.
+        
+        Args:
+            persona_config: Dictionary containing persona configuration
+            model: The Gemini model to use (default: gemini-2.5-flash)
+            
+        Returns:
+            Agent instance configured with persona settings
+        """
+        from google.adk.agents import Agent
         
         return Agent(
             name=persona_config['id'],
@@ -866,8 +896,51 @@ class PersonaConfigManager:
             description=f"{persona_config['name']} - {persona_config['title']}",
             temperature=persona_config['model_parameters']['temperature'],
             top_p=persona_config['model_parameters']['top_p'],
-            # Additional parameters...
+            top_k=persona_config['model_parameters']['top_k'],
+            max_output_tokens=persona_config['model_parameters']['max_output_tokens'],
         )
+```
+
+### Using PersonaConfigManager with Google ADK Agent Structure
+
+Each agent file (e.g., `backend/agents/host_agent/agent.py`) will use the PersonaConfigManager:
+
+```python
+# backend/agents/host_agent/agent.py
+# Following Google ADK structure: https://google.github.io/adk-docs/get-started/quickstart/
+
+import sys
+from pathlib import Path
+
+# Add backend to path to import modules
+backend_path = Path(__file__).parent.parent.parent
+sys.path.insert(0, str(backend_path))
+
+from persona.manager import PersonaConfigManager
+from google.adk.agents import Agent
+
+# Initialize persona manager
+persona_manager = PersonaConfigManager(config_dir="../../../personas")
+
+# Get the currently selected persona set (could be from config or environment variable)
+# For now, default to technology
+persona_set = persona_manager.get_persona_set("technology")
+
+# Get the host persona configuration
+host_config = persona_set['host']
+
+# Create the host agent using the persona configuration
+root_agent = Agent(
+    name=host_config['id'],
+    model="gemini-2.5-flash",
+    description=f"{host_config['name']} - {host_config['title']}",
+    instruction=host_config['system_instruction'],
+    temperature=host_config['model_parameters']['temperature'],
+    top_p=host_config['model_parameters']['top_p'],
+)
+
+# Export for ADK to discover
+__all__ = ['root_agent']
 ```
 
 ---
@@ -932,27 +1005,37 @@ mypy>=1.5.0
 
 **Tasks**:
 - Set up ADK project structure
-  - Initialize ADK project with `adk init`
+  - Initialize ADK project with `adk init` in the root directory
   - Configure `.env` with API credentials
-  - Create project directory structure
-  - Create `personas/` directory
+  - Create project directory structure (backend/, database/, ui/, personas/)
+  - Create `backend/`, `database/`, `ui/`, and `personas/` directories
 - **Implement Persona Configuration System**
-  - Create persona configuration manager (`src/ai_podcast/persona/manager.py`)
-  - Implement YAML loader for persona files
-  - Create validation logic for persona configs
+  - Create persona configuration manager (`backend/persona/manager.py`)
+  - Implement YAML loader for persona files (`backend/persona/loader.py`)
+  - Create validation logic for persona configs (`backend/persona/validator.py`)
   - Create default persona sets:
     - `personas/technology.yaml`
     - `personas/sports.yaml` (optional for Phase 1)
+- **Implement ADK agents following Google structure**
+  - Create orchestrator agent folder: `backend/agents/orchestrator/`
+    - `backend/agents/orchestrator/__init__.py`
+    - `backend/agents/orchestrator/agent.py`
+  - Create host agent folder: `backend/agents/host_agent/`
+    - `backend/agents/host_agent/__init__.py`
+    - `backend/agents/host_agent/agent.py`
+  - Create guest agents folder: `backend/agents/guest_agents/`
+    - `backend/agents/guest_agents/__init__.py`
+    - `backend/agents/guest_agents/agent.py`
 - Implement dynamic agent creation
   - Create agents from loaded persona configurations
   - Map persona configs to ADK Agent parameters
-  - Test agent creation with different personas
-- Create simple orchestrator for turn-taking
-  - Implement conversation flow logic
+  - Test individual agent creation with different personas
+- Create conversation orchestrator
+  - Implement conversation flow logic in orchestrator agent
   - Basic turn rotation between host and guests
   - Simple state tracking with persona set info
 - Implement CLI interface
-  - Create main entry point
+  - Create main entry point (`backend/main.py`)
   - **Add persona set selection (interactive or CLI arg)**
   - Add topic input prompt
   - Format and display agent responses with persona names
@@ -1319,13 +1402,15 @@ def test_agent_response_time():
 
 ## File Structure
 
+Following Google ADK best practices ([reference](https://google.github.io/adk-docs/get-started/quickstart/)), the project is organized into backend, database, and UI folders:
+
 ```
 ai-podcast/
 ├── .env                          # Environment variables (not in git)
 ├── .env.example                  # Template for environment variables
 ├── .gitignore                    # Git ignore file
 ├── README.md                     # Main documentation
-├── requirements.txt              # Python dependencies
+├── requirements.txt              # Python dependencies (backend)
 ├── requirements-dev.txt          # Development dependencies
 ├── pytest.ini                    # Pytest configuration
 ├── setup.py                      # Package setup
@@ -1343,40 +1428,60 @@ ai-podcast/
 │   └── custom/                   # User-created custom personas
 │       └── example.yaml
 │
-├── src/
-│   └── ai_podcast/
+├── backend/                      # Backend application (ADK agents)
+│   ├── __init__.py
+│   ├── main.py                   # Main entry point
+│   ├── config.py                 # Configuration management
+│   │
+│   ├── agents/                   # ADK agents (following Google ADK structure)
+│   │   ├── __init__.py
+│   │   │
+│   │   ├── orchestrator/         # Orchestrator agent (Google ADK structure)
+│   │   │   ├── __init__.py
+│   │   │   └── agent.py          # Orchestrator agent implementation
+│   │   │
+│   │   ├── host_agent/           # Host agent (Google ADK structure)
+│   │   │   ├── __init__.py
+│   │   │   └── agent.py          # Host agent implementation
+│   │   │
+│   │   └── guest_agents/         # Guest agents (Google ADK structure)
+│   │       ├── __init__.py
+│   │       └── agent.py          # Guest agents implementation
+│   │
+│   ├── models/
+│   │   ├── __init__.py
+│   │   ├── conversation.py       # Conversation state model
+│   │   ├── message.py            # Message model
+│   │   └── persona.py            # Persona configuration model
+│   │
+│   ├── persona/
+│   │   ├── __init__.py
+│   │   ├── manager.py            # Persona configuration manager
+│   │   ├── loader.py             # YAML/JSON loader
+│   │   └── validator.py          # Configuration validator
+│   │
+│   ├── services/
+│   │   ├── __init__.py
+│   │   ├── conversation_service.py  # Conversation management service
+│   │   └── state_service.py      # State management service
+│   │
+│   ├── cli/
+│   │   ├── __init__.py
+│   │   ├── interface.py          # CLI interface
+│   │   └── formatter.py          # Output formatting
+│   │
+│   └── utils/
 │       ├── __init__.py
-│       ├── main.py               # Main entry point
-│       ├── config.py             # Configuration management
-│       │
-│       ├── agents/
-│       │   ├── __init__.py
-│       │   ├── base_agent.py     # Base agent class
-│       │   ├── host_agent.py     # Host persona implementation
-│       │   ├── guest_agents.py   # Guest personas implementation
-│       │   └── orchestrator.py   # Conversation orchestrator
-│       │
-│       ├── models/
-│       │   ├── __init__.py
-│       │   ├── conversation.py   # Conversation state model
-│       │   ├── message.py        # Message model
-│       │   └── persona.py        # Persona configuration model
-│       │
-│       ├── persona/
-│       │   ├── __init__.py
-│       │   ├── manager.py        # Persona configuration manager
-│       │   ├── loader.py         # YAML/JSON loader
-│       │   └── validator.py      # Configuration validator
-│       │
-│       ├── cli/
-│       │   ├── __init__.py
-│       │   ├── interface.py      # CLI interface
-│       │   └── formatter.py      # Output formatting
-│       │
-│       └── utils/
-│           ├── __init__.py
-│           ├── logger.py         # Logging configuration
-│           └── error_handler.py  # Error handling utilities
+│       ├── logger.py             # Logging configuration
+│       └── error_handler.py      # Error handling utilities
+│
+├── database/                     # Database related files
+│   ├── migrations/               # Database migration scripts
+│   ├── schemas/                  # Database schemas
+│   └── seeds/                    # Seed data (optional)
+│
+├── ui/                           # Frontend (future implementation)
+│   └── README.md                 # Placeholder for future UI
 │
 └── tests/
     ├── __init__.py
@@ -1386,6 +1491,7 @@ ai-podcast/
     │   ├── test_agents.py
     │   ├── test_models.py
     │   ├── test_persona.py       # Test persona loading
+    │   ├── test_services.py
     │   ├── test_cli.py
     │   └── test_utils.py
     │
@@ -1398,6 +1504,18 @@ ai-podcast/
     └── performance/
         └── test_response_time.py
 ```
+
+### Key Structure Notes
+
+1. **Backend/agents structure**: Follows Google ADK best practices where each agent is in its own folder with `__init__.py` and `agent.py` files (as recommended in the [ADK Quickstart](https://google.github.io/adk-docs/get-started/quickstart/))
+
+2. **Backend folder**: Contains all backend Python code including agents, models, services, and utilities
+
+3. **Database folder**: Centralized location for database-related files (migrations, schemas, seeds)
+
+4. **UI folder**: Placeholder for future frontend implementation
+
+5. **Personas folder**: Remains at root level for easy access and configuration
 
 ---
 
@@ -1491,8 +1609,28 @@ cp .env.example .env
 # Run tests
 pytest
 
-# Run application
-adk run
+# Run application with ADK
+# Note: adk run expects agents in individual folders per Google ADK structure
+# Navigate to parent of agent folders (backend/agents/)
+cd backend/agents
+adk run orchestrator  # Run the orchestrator agent
+
+# Or run from project root using main.py
+cd ../..
+python backend/main.py
+```
+
+### Running with ADK Dev UI
+
+According to the [Google ADK Quickstart](https://google.github.io/adk-docs/get-started/quickstart/), you can use the ADK web interface:
+
+```bash
+# From the backend/agents directory (parent of agent folders)
+cd backend/agents
+adk web
+
+# This will start the dev UI at http://localhost:8000
+# You can then select agents from the dropdown menu
 ```
 
 ### Production Considerations
@@ -1647,6 +1785,7 @@ class RateLimiter:
 |---------|------|---------|
 | 1.0 | 2025-10-02 | Initial technical specifications |
 | 1.1 | 2025-10-02 | Added configurable persona system for domain-specific hosts and guests |
+| 1.2 | 2025-10-02 | Reorganized file structure: backend/, database/, ui/; adopted Google ADK agent structure |
 
 ---
 
