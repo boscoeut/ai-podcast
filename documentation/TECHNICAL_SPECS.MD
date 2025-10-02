@@ -1415,7 +1415,7 @@ ai-podcast/
 ├── pytest.ini                    # Pytest configuration
 ├── setup.py                      # Package setup
 │
-├── docs/
+├── documentation/
 │   ├── PRD.MD                    # Product Requirements Document
 │   ├── TECHNICAL_SPECS.MD        # This document
 │   ├── USER_GUIDE.md             # User guide
@@ -1786,6 +1786,7 @@ class RateLimiter:
 | 1.0 | 2025-10-02 | Initial technical specifications |
 | 1.1 | 2025-10-02 | Added configurable persona system for domain-specific hosts and guests |
 | 1.2 | 2025-10-02 | Reorganized file structure: backend/, database/, ui/; adopted Google ADK agent structure |
+| 1.3 | 2025-10-02 | Renamed docs/ folder to documentation/ for better clarity |
 
 ---
 

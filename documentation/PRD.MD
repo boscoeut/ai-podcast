@@ -512,6 +512,7 @@ For detailed implementation phases, technology stack, testing strategy, and deve
 | 1.0 | 2025-10-02 | AI Assistant | Initial PRD creation |
 | 1.1 | 2025-10-02 | AI Assistant | Moved technical specifications to separate document |
 | 1.2 | 2025-10-02 | AI Assistant | Added configurable persona system (FR8) for domain-specific hosts/guests |
+| 1.3 | 2025-10-02 | AI Assistant | Renamed docs/ folder to documentation/ for better clarity |
 
 **Document Status**: Draft for Review  
 **Next Review Date**: TBD  
