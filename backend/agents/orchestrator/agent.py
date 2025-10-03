@@ -26,6 +26,13 @@ except ImportError:
     host_agent = None
     print("Warning: Could not import host agent")
 
+# Import guest agents
+try:
+    from agents.guest_maya.agent import root_agent as guest_maya_agent
+except ImportError:
+    guest_maya_agent = None
+    print("Warning: Could not import guest Maya agent")
+
 
 def get_podcast_topic() -> dict:
     """Prompts the user to enter a topic for the podcast discussion.
@@ -85,6 +92,43 @@ def call_host_agent(action: str, **kwargs) -> dict:
     }
 
 
+def call_guest_maya(action: str, **kwargs) -> dict:
+    """Call Dr. Maya Chen guest agent to provide academic insights.
+    
+    Args:
+        action (str): The action for the guest to perform 
+                     ('provide_insight', 'respond_question', 'engage_discussion')
+        **kwargs: Additional parameters for the specific action.
+        
+    Returns:
+        dict: Response from the guest agent.
+    """
+    if guest_maya_agent is None:
+        return {
+            "status": "error",
+            "error_message": "Guest Maya agent is not available"
+        }
+    
+    action_map = {
+        "provide_insight": "provide_expert_insight",
+        "respond_question": "respond_to_question", 
+        "engage_discussion": "engage_in_discussion"
+    }
+    
+    if action not in action_map:
+        return {
+            "status": "error",
+            "error_message": f"Unknown guest action: {action}"
+        }
+    
+    return {
+        "status": "success",
+        "action": action,
+        "message": f"Dr. Maya Chen will {action}",
+        "parameters": kwargs
+    }
+
+
 def start_podcast_session(topic: str) -> dict:
     """Starts the podcast session with the given topic.
     
@@ -140,18 +184,23 @@ root_agent = Agent(
 4. Handle user interactions and input
 5. Provide smooth transitions and summaries
 
-You have access to a host agent (Alex Rivera) who facilitates the discussion.
+You have access to:
+- A host agent (Alex Rivera) who facilitates the discussion
+- A guest agent (Dr. Maya Chen) who provides academic insights and research-based perspectives
+
 When starting a session, use the host agent to provide introductions.
+During conversations, coordinate between host and guest agents for engaging dialogue.
 When ending a session, use the host agent to provide closing remarks.
 
-Be helpful, engaging, and professional. Guide users through the podcast experience and ensure smooth conversation flow.
+Be helpful, engaging, and professional. Guide users through the podcast experience and ensure smooth conversation flow between all participants.
 
 Available tools:
 - get_podcast_topic: Get the discussion topic from the user
 - call_host_agent: Coordinate with the host agent for introductions, questions, summaries, or closing
+- call_guest_maya: Coordinate with Dr. Maya Chen for academic insights, responses, and discussion engagement
 - start_podcast_session: Start a new podcast session on a topic
 - end_podcast_session: End the current podcast session
 
 When a user provides a topic, use start_podcast_session to begin the episode.""",
-    tools=[get_podcast_topic, call_host_agent, start_podcast_session, end_podcast_session]
+    tools=[get_podcast_topic, call_host_agent, call_guest_maya, start_podcast_session, end_podcast_session]
 )

@@ -1591,18 +1591,23 @@ ENABLE_THIRD_GUEST=false
 
 ### Local Development Setup
 
-**IMPORTANT**: This project uses `.venv` as the standard virtual environment name. Always use `.venv` for consistency.
+**CRITICAL**: This project already has a virtual environment set up at `.venv`. **DO NOT CREATE A NEW ONE**. Always use the existing `.venv` virtual environment.
 
 ```bash
 # Clone repository
 git clone <repository-url>
 cd ai-podcast
 
-# Create virtual environment (ALWAYS use .venv)
-python3 -m venv .venv
+# IMPORTANT: Virtual environment already exists at .venv
+# DO NOT run: python3 -m venv .venv (this will overwrite existing setup)
+
+# Activate the existing virtual environment
 source .venv/bin/activate  # On Windows: .venv\Scripts\activate
 
-# Install dependencies
+# Verify you're in the correct environment
+which python  # Should show path to .venv/bin/python
+
+# Install dependencies (if needed)
 pip install -r requirements-dev.txt
 
 # Configure environment

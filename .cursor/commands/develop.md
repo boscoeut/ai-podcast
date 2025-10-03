@@ -50,10 +50,11 @@ Based on the requirements and progress:
 
 ### Best Practices
 
-1. **Use `.venv` Virtual Environment**: Always use `.venv` as the virtual environment for this project
-   - Create with: `python3 -m venv .venv`
-   - Activate with: `source .venv/bin/activate` (macOS/Linux) or `.venv\Scripts\activate` (Windows)
-   - Install dependencies: `pip install -r requirements.txt`
+1. **Use `.venv` Virtual Environment**: **CRITICAL** - This project already has a virtual environment at `.venv`. **DO NOT CREATE A NEW ONE**.
+   - **DO NOT** run: `python3 -m venv .venv` (this will overwrite existing setup)
+   - Activate the existing environment: `source .venv/bin/activate` (macOS/Linux) or `.venv\Scripts\activate` (Windows)
+   - Verify you're in the correct environment: `which python` should show `.venv/bin/python`
+   - Install dependencies if needed: `pip install -r requirements.txt`
 
 2. **Follow ADK Structure**: Use Google ADK's recommended folder structure
    - Each agent in its own folder with `__init__.py` and `agent.py`
@@ -217,9 +218,12 @@ ai-podcast/
 ## Quick Reference Commands
 
 ```bash
-# Activate virtual environment
+# CRITICAL: Activate the EXISTING virtual environment (DO NOT create new one)
 source .venv/bin/activate  # macOS/Linux
 .venv\Scripts\activate      # Windows
+
+# Verify you're in the correct environment
+which python  # Should show .venv/bin/python
 
 # Run tests
 pytest

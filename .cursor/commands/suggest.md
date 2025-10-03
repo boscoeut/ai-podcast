@@ -294,4 +294,23 @@ Once you receive a task suggestion:
 
 ---
 
+## Important: Virtual Environment Setup
+
+**CRITICAL**: This project already has a virtual environment configured at `.venv`. **Always use the existing `.venv` virtual environment**:
+
+```bash
+# Activate the existing virtual environment (DO NOT create a new one)
+source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+
+# Verify you're using the correct environment
+which python  # Should show path to .venv/bin/python
+
+# Install dependencies if needed
+pip install -r requirements.txt
+```
+
+**DO NOT** run `python3 -m venv .venv` as this will overwrite the existing setup.
+
+---
+
 *This command helps maintain focused, incremental progress toward MVP completion by providing intelligent task recommendations based on project state and requirements.*
