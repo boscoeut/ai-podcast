@@ -1,7 +1,8 @@
 """Orchestrator Agent Implementation.
 
 This module implements the main orchestrator agent that coordinates
-the podcast conversation flow between host and guest agents.
+the podcast conversation flow between host and guest agents using
+the persona configuration system.
 
 Following Google ADK structure: https://google.github.io/adk-docs/get-started/quickstart/
 """
@@ -18,6 +19,14 @@ load_dotenv()
 # Add backend to path for imports
 backend_path = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(backend_path))
+
+# Import persona manager
+try:
+    from persona.manager import PersonaConfigManager
+    persona_manager = PersonaConfigManager()
+except ImportError as e:
+    persona_manager = None
+    print(f"Warning: Could not import persona manager: {e}")
 
 # Import host agent
 try:
@@ -52,6 +61,88 @@ def get_podcast_topic() -> dict:
         "status": "success",
         "topic": topic.strip()
     }
+
+
+def get_available_persona_sets() -> dict:
+    """Get list of available persona sets.
+    
+    Returns:
+        dict: Contains list of available persona sets and status.
+    """
+    if persona_manager is None:
+        return {
+            "status": "error",
+            "error_message": "Persona manager is not available"
+        }
+    
+    try:
+        persona_sets = persona_manager.list_available_sets()
+        return {
+            "status": "success",
+            "persona_sets": persona_sets,
+            "count": len(persona_sets)
+        }
+    except Exception as e:
+        return {
+            "status": "error",
+            "error_message": f"Error loading persona sets: {str(e)}"
+        }
+
+
+def get_persona_set_info(set_id: str) -> dict:
+    """Get information about a specific persona set.
+    
+    Args:
+        set_id (str): The persona set identifier
+        
+    Returns:
+        dict: Contains persona set information and status.
+    """
+    if persona_manager is None:
+        return {
+            "status": "error",
+            "error_message": "Persona manager is not available"
+        }
+    
+    try:
+        info = persona_manager.get_persona_set_info(set_id)
+        return {
+            "status": "success",
+            "persona_set_info": info
+        }
+    except ValueError as e:
+        return {
+            "status": "error",
+            "error_message": str(e)
+        }
+
+
+def load_persona_set(set_id: str) -> dict:
+    """Load a specific persona set configuration.
+    
+    Args:
+        set_id (str): The persona set identifier
+        
+    Returns:
+        dict: Contains persona set configuration and status.
+    """
+    if persona_manager is None:
+        return {
+            "status": "error",
+            "error_message": "Persona manager is not available"
+        }
+    
+    try:
+        persona_set = persona_manager.get_persona_set(set_id)
+        return {
+            "status": "success",
+            "persona_set": persona_set
+        }
+    except ValueError as e:
+        return {
+            "status": "error",
+            "error_message": str(e)
+        }
 
 
 def call_host_agent(action: str, **kwargs) -> dict:
@@ -175,32 +266,44 @@ def end_podcast_session() -> dict:
 root_agent = Agent(
     name="podcast_orchestrator",
     model="gemini-2.0-flash",
-    description="Orchestrates AI-powered podcast conversations with multiple agents",
-    instruction="""You are the orchestrator for an AI-powered podcast system. Your role is to:
+    description="Orchestrates AI-powered podcast conversations with configurable personas",
+    instruction="""You are the orchestrator for an AI-powered podcast system with configurable personas. Your role is to:
 
-1. Welcome users and collect discussion topics
-2. Coordinate conversations between host and guest agents
-3. Manage the flow of the podcast session
+1. Welcome users and help them select persona sets for their discussion
+2. Collect discussion topics and coordinate conversations
+3. Manage the flow of podcast sessions with dynamic persona configurations
 4. Handle user interactions and input
 5. Provide smooth transitions and summaries
 
-You have access to:
-- A host agent (Alex Rivera) who facilitates the discussion
-- A guest agent (Dr. Maya Chen) who provides academic insights and research-based perspectives
-
-When starting a session, use the host agent to provide introductions.
-During conversations, coordinate between host and guest agents for engaging dialogue.
-When ending a session, use the host agent to provide closing remarks.
-
-Be helpful, engaging, and professional. Guide users through the podcast experience and ensure smooth conversation flow between all participants.
+You have access to a persona configuration system that allows users to choose from different domain-specific persona sets (technology, sports, business, etc.). Each persona set includes:
+- A host persona with specific expertise and speaking style
+- Multiple guest personas with distinct perspectives and backgrounds
 
 Available tools:
+- get_available_persona_sets: List all available persona sets
+- get_persona_set_info: Get detailed information about a specific persona set
+- load_persona_set: Load a specific persona set configuration
 - get_podcast_topic: Get the discussion topic from the user
 - call_host_agent: Coordinate with the host agent for introductions, questions, summaries, or closing
 - call_guest_maya: Coordinate with Dr. Maya Chen for academic insights, responses, and discussion engagement
 - start_podcast_session: Start a new podcast session on a topic
 - end_podcast_session: End the current podcast session
 
-When a user provides a topic, use start_podcast_session to begin the episode.""",
-    tools=[get_podcast_topic, call_host_agent, call_guest_maya, start_podcast_session, end_podcast_session]
+When users start a session:
+1. Help them explore available persona sets if they haven't chosen one
+2. Load the selected persona set configuration
+3. Get their discussion topic
+4. Start the podcast session with the configured personas
+
+Be helpful, engaging, and professional. Guide users through the persona selection process and ensure smooth conversation flow between all participants.""",
+    tools=[
+        get_available_persona_sets, 
+        get_persona_set_info, 
+        load_persona_set,
+        get_podcast_topic, 
+        call_host_agent, 
+        call_guest_maya, 
+        start_podcast_session, 
+        end_podcast_session
+    ]
 )
