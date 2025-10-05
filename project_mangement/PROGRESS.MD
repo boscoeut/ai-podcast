@@ -1,3 +1,11 @@
+## 2025-01-27 - Startup Agent for ADK Web Interface
+
+**Phase**: Phase 1 - MVP Enhancement
+
+**Summary**: Created a startup agent that replicates main.py functionality for use with the ADK web interface. The agent handles environment setup, persona selection, topic collection, guest configuration, and session initialization, providing the same functionality as the CLI version but in an interactive web format. Updated TECHNICAL_SPECS.MD to document the startup agent as the primary entry point for ADK web usage.
+
+---
+
 ## 2025-10-02 - Initial Orchestrator Agent Implementation
 
 **Phase**: Phase 1 - MVP

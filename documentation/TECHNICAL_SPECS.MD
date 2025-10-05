@@ -176,7 +176,20 @@ This document contains the technical specifications, architecture, and implement
 
 ### Key Components
 
-#### 1. Persona Configuration Manager
+#### 1. Startup Agent (Primary Entry Point)
+- **Responsibility**: Handle initial setup and configuration for AI-Podcast sessions via ADK web interface
+- **Implementation**: ADK Agent that replicates main.py functionality in agent-based format
+- **Key Functions**:
+  - Load and validate environment configuration
+  - Verify API key setup and logging configuration
+  - Browse and select persona sets interactively
+  - Collect discussion topics with guidance
+  - Configure guest count and selection (1-5 guests)
+  - Initialize complete podcast sessions
+  - Hand off to orchestrator agent for conversation flow
+- **Usage**: Primary entry point when using `adk web` command
+
+#### 2. Persona Configuration Manager
 - **Responsibility**: Load and manage persona configurations for different domains
 - **Implementation**: Python module that reads and validates persona configuration files
 - **Key Functions**:
@@ -187,7 +200,7 @@ This document contains the technical specifications, architecture, and implement
   - Support custom persona creation
   - Map persona configurations to agent parameters
 
-#### 2. Podcast Orchestrator Agent
+#### 3. Podcast Orchestrator Agent
 - **Responsibility**: Main controller that manages the entire podcast flow
 - **Implementation**: Root agent that delegates to host and guest agents
 - **Key Functions**:
@@ -198,7 +211,7 @@ This document contains the technical specifications, architecture, and implement
   - Handle user input integration
   - Detect and execute exit commands
 
-#### 3. Host Agent (Dynamic Persona)
+#### 4. Host Agent (Dynamic Persona)
 - **Responsibility**: Podcast host that facilitates discussion
 - **Implementation**: ADK Agent with domain-specific host instructions loaded from configuration
 - **Persona Examples**:
@@ -212,7 +225,7 @@ This document contains the technical specifications, architecture, and implement
   - Summarize key points
   - Transition between topics
 
-#### 4. Guest Agents (Dynamic Personas)
+#### 5. Guest Agents (Dynamic Personas)
 - **Responsibility**: Provide diverse perspectives on topic
 - **Implementation**: Separate ADK Agents with domain-specific instructions loaded from configuration
 - **Persona Examples by Domain**:
@@ -225,7 +238,7 @@ This document contains the technical specifications, architecture, and implement
   - Engage with other guests' ideas
   - React to user input
 
-#### 5. Conversation State Manager
+#### 6. Conversation State Manager
 - **Responsibility**: Maintain conversation context and state
 - **Implementation**: Python class/module
 - **State Includes**:
@@ -236,7 +249,7 @@ This document contains the technical specifications, architecture, and implement
   - User participation points
   - Session status (active/ending)
 
-#### 6. CLI Interface
+#### 7. CLI Interface
 - **Responsibility**: Handle user input/output
 - **Implementation**: Python command-line interface
 - **Key Functions**:
@@ -1626,6 +1639,10 @@ ai-podcast/
 │   ├── agents/                   # ADK agents (following Google ADK structure)
 │   │   ├── __init__.py
 │   │   │
+│   │   ├── startup/              # Startup agent (Google ADK structure)
+│   │   │   ├── __init__.py
+│   │   │   └── agent.py          # Startup agent - primary entry point for ADK web
+│   │   │
 │   │   ├── orchestrator/         # Orchestrator agent (Google ADK structure)
 │   │   │   ├── __init__.py
 │   │   │   └── agent.py          # Orchestrator agent implementation
@@ -1808,17 +1825,21 @@ cp .env.example .env
 pytest
 
 # Run application with ADK
-# Note: adk run expects agents in individual folders per Google ADK structure
-# Navigate to parent of agent folders (backend/agents/)
+# Run with ADK (recommended for web interface)
 cd backend/agents
-adk run orchestrator  # Run the orchestrator agent
+adk web
+# Then select "ai_podcast_startup" from the dropdown
 
-# Or run from project root using main.py
+# Or run specific agents directly
+adk run startup          # Startup agent (primary entry point)
+adk run orchestrator     # Orchestrator agent (for conversation flow)
+
+# Or run from project root using main.py (CLI mode)
 cd ../..
 python backend/main.py
 ```
 
-### Running with ADK Dev UI
+### Running with ADK Web Interface
 
 According to the [Google ADK Quickstart](https://google.github.io/adk-docs/get-started/quickstart/), you can use the ADK web interface:
 
@@ -1828,8 +1849,22 @@ cd backend/agents
 adk web
 
 # This will start the dev UI at http://localhost:8000
-# You can then select agents from the dropdown menu
+# Select "ai_podcast_startup" from the dropdown menu to begin
 ```
+
+#### Startup Agent Workflow
+
+When using `adk web` with the startup agent, the following workflow is recommended:
+
+1. **Select Startup Agent**: Choose "ai_podcast_startup" from the agent dropdown
+2. **System Check**: The agent will verify environment configuration and API key
+3. **Persona Selection**: Browse available persona sets and select your preferred domain
+4. **Topic Input**: Provide a discussion topic for the podcast
+5. **Guest Configuration**: Select the number of guests (1-5) for the session
+6. **Session Initialization**: Complete the setup and prepare for conversation
+7. **Handoff**: Switch to the orchestrator agent to begin the actual podcast conversation
+
+This workflow provides the same functionality as `main.py` but in an interactive web interface format.
 
 ### Production Considerations
 - Use production API keys with appropriate quotas
@@ -1986,6 +2021,7 @@ class RateLimiter:
 | 1.2 | 2025-10-02 | Reorganized file structure: backend/, database/, ui/; adopted Google ADK agent structure |
 | 1.3 | 2025-10-02 | Renamed docs/ folder to documentation/ for better clarity |
 | 1.4 | 2025-10-05 | Added dynamic guest selection (TR4.6-4.7, TR8.9-8.12); guest pool model with 5+ personas; updated data models, persona manager, and all phases |
+| 1.5 | 2025-01-27 | Added startup agent for ADK web interface; replicates main.py functionality in agent-based format; updated deployment instructions and file structure |
 
 ---
 
