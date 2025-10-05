@@ -28,10 +28,18 @@ def test_conversation_initialization():
         persona_set = persona_manager.get_persona_set('technology')
         print(f"✅ Loaded technology persona set")
         
+        # Select guests from pool (same as main.py does)
+        selected_guests = persona_manager.select_guests(persona_set, 2)  # Use 2 guests for test
+        print(f"✅ Selected 2 guests: {', '.join([g['name'] for g in selected_guests])}")
+        
+        # Create a modified persona set with selected guests (same as main.py)
+        persona_set_with_selected_guests = persona_set.copy()
+        persona_set_with_selected_guests['guests'] = selected_guests
+        
         # Initialize conversation service
         topic = "The future of artificial intelligence"
         conversation_service = ConversationService(
-            persona_set=persona_set,
+            persona_set=persona_set_with_selected_guests,
             topic=topic
         )
         print(f"✅ Initialized conversation service with topic: {topic}")
