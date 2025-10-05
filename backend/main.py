@@ -18,6 +18,7 @@ backend_path = Path(__file__).parent
 sys.path.insert(0, str(backend_path))
 
 from persona.manager import PersonaConfigManager
+from services.conversation_service import ConversationService
 
 
 def load_environment():
@@ -163,15 +164,33 @@ Examples:
                 print("❌ Error: Please provide a topic for discussion.")
                 sys.exit(1)
         
-        # TODO: Start podcast session with orchestrator
+        # Start podcast session with conversation service
         print(f"\n🎙️  Starting AI-Podcast session...")
         print(f"   Topic: {topic}")
         print(f"   Host: {selected_persona_set['host']['name']}")
         print(f"   Guests: {', '.join([guest['name'] for guest in selected_persona_set['guests']])}")
+        print("\n   Press Ctrl+C at any time to exit gracefully")
         
-        print("\n⚠️  Note: Full podcast session integration coming soon!")
-        print("   For now, you can test individual agents using:")
-        print("   cd backend/agents && adk run orchestrator")
+        # Initialize conversation service
+        conversation_service = ConversationService(
+            persona_set=selected_persona_set,
+            topic=topic
+        )
+        
+        print("   💭 You can chime in after each speaker during the conversation")
+        
+        # Start the conversation
+        success = conversation_service.start_conversation()
+        
+        # Display conversation summary
+        if success:
+            summary = conversation_service.get_conversation_summary()
+            print(f"\n📊 Conversation Summary:")
+            print(f"   Total turns: {summary['total_turns']}")
+            print(f"   User participated: {'Yes' if summary['user_participated'] else 'No'}")
+            print(f"\n✅ Thank you for using AI-Podcast!")
+        
+        sys.exit(0 if success else 1)
         
     except Exception as e:
         print(f"❌ Error initializing AI-Podcast: {e}")
