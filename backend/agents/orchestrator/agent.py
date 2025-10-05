@@ -20,13 +20,21 @@ load_dotenv()
 backend_path = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(backend_path))
 
+# Calculate absolute path to personas directory (at project root)
+project_root = backend_path.parent  # Go up from backend/ to project root
+personas_path = project_root / "personas"
+
 # Import persona manager
 try:
     from persona.manager import PersonaConfigManager
-    persona_manager = PersonaConfigManager()
+    # Use absolute path to personas directory
+    persona_manager = PersonaConfigManager(config_dir=str(personas_path))
 except ImportError as e:
     persona_manager = None
     print(f"Warning: Could not import persona manager: {e}")
+except Exception as e:
+    persona_manager = None
+    print(f"Warning: Could not initialize persona manager: {e}")
 
 # Import host agent
 try:

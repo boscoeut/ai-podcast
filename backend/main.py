@@ -103,9 +103,12 @@ Examples:
     setup_logging()
     
     try:
-        # Initialize persona manager
+        # Initialize persona manager with absolute path
         print("🤖 Initializing AI-Podcast...")
-        persona_manager = PersonaConfigManager()
+        # Calculate path to personas directory (at project root)
+        project_root = Path(__file__).parent.parent
+        personas_path = project_root / "personas"
+        persona_manager = PersonaConfigManager(config_dir=str(personas_path))
         
         # Handle list command
         if args.list_personas:
@@ -164,16 +167,58 @@ Examples:
                 print("❌ Error: Please provide a topic for discussion.")
                 sys.exit(1)
         
+        # Get guest count from user
+        guest_pool = persona_manager.get_guest_personas(selected_persona_set['set_id'])
+        default_guest_count = selected_persona_set.get('default_guest_count', 2)
+        max_guests = len(guest_pool)
+        
+        print(f"\n👥 How many guests would you like for this podcast? (1-{max_guests})")
+        print(f"   Available guests: {', '.join([g['name'] for g in guest_pool])}")
+        
+        guest_count = None
+        while guest_count is None:
+            try:
+                guest_input = input(f"   Guest count [default: {default_guest_count}]: ").strip()
+                
+                if not guest_input:
+                    # Use default
+                    guest_count = default_guest_count
+                else:
+                    guest_count = int(guest_input)
+                    
+                    # Validate range
+                    if guest_count < 1 or guest_count > max_guests:
+                        print(f"   ⚠️  Please enter a number between 1 and {max_guests}")
+                        guest_count = None
+                        continue
+                        
+            except ValueError:
+                print("   ⚠️  Please enter a valid number")
+                continue
+        
+        # Select guests from pool
+        try:
+            selected_guests = persona_manager.select_guests(selected_persona_set, guest_count)
+            print(f"✅ Selected {guest_count} guest(s): {', '.join([g['name'] for g in selected_guests])}")
+            
+            # Create a modified persona set with selected guests
+            persona_set_with_selected_guests = selected_persona_set.copy()
+            persona_set_with_selected_guests['guests'] = selected_guests
+            
+        except ValueError as e:
+            print(f"❌ Error selecting guests: {e}")
+            sys.exit(1)
+        
         # Start podcast session with conversation service
         print(f"\n🎙️  Starting AI-Podcast session...")
         print(f"   Topic: {topic}")
-        print(f"   Host: {selected_persona_set['host']['name']}")
-        print(f"   Guests: {', '.join([guest['name'] for guest in selected_persona_set['guests']])}")
+        print(f"   Host: {persona_set_with_selected_guests['host']['name']}")
+        print(f"   Guests: {', '.join([guest['name'] for guest in persona_set_with_selected_guests['guests']])}")
         print("\n   Press Ctrl+C at any time to exit gracefully")
         
-        # Initialize conversation service
+        # Initialize conversation service with selected guests
         conversation_service = ConversationService(
-            persona_set=selected_persona_set,
+            persona_set=persona_set_with_selected_guests,
             topic=topic
         )
         

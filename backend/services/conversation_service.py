@@ -161,19 +161,11 @@ class ConversationService:
         if user_input:
             return  # User participated, skip rest of exchange
         
-        # Guest 1 responds
-        self._guest_respond(0)
-        
-        # Allow user to chime in after guest 1
-        user_input = self._quick_pause_for_user()
-        if user_input:
-            return  # User participated, skip rest of exchange
-        
-        # Guest 2 responds (if exists)
-        if len(self.guest_names) > 1:
-            self._guest_respond(1)
+        # Have all guests respond in turn
+        for guest_index in range(len(self.guest_names)):
+            self._guest_respond(guest_index)
             
-            # Allow user to chime in after guest 2
+            # Allow user to chime in after each guest
             user_input = self._quick_pause_for_user()
             if user_input:
                 return  # User participated, skip rest of exchange
@@ -229,7 +221,7 @@ class ConversationService:
         """Have a guest respond to the current discussion.
         
         Args:
-            guest_index: Index of the guest (0 or 1)
+            guest_index: Index of the guest (0-4 for up to 5 guests)
         """
         if guest_index >= len(self.persona_set['guests']):
             return
@@ -238,8 +230,15 @@ class ConversationService:
         guest_name = guest_config['name']
         guest_id = guest_config['id']
         
-        # Determine speaker type
-        speaker = Speaker.GUEST_1 if guest_index == 0 else Speaker.GUEST_2
+        # Determine speaker type based on index
+        speaker_map = {
+            0: Speaker.GUEST_1,
+            1: Speaker.GUEST_2,
+            2: Speaker.GUEST_1,  # Reuse for 3rd guest (display purposes)
+            3: Speaker.GUEST_2,  # Reuse for 4th guest
+            4: Speaker.GUEST_1,  # Reuse for 5th guest
+        }
+        speaker = speaker_map.get(guest_index, Speaker.GUEST_1)
         
         # Generate response
         response = self._generate_guest_response(guest_config)
@@ -302,12 +301,23 @@ class ConversationService:
     
     def _host_followup(self):
         """Host provides a brief follow-up or transition."""
-        followups = [
-            "Excellent points from both of you. Let's explore this further.",
-            "That's fascinating. There's clearly a lot to unpack here.",
-            "I love how you've framed that. Let's dig deeper.",
-            "These are important perspectives. Let's continue.",
-        ]
+        # Adapt followup based on number of guests
+        num_guests = len(self.guest_names)
+        
+        if num_guests == 1:
+            followups = [
+                "Excellent insight. Let's explore this further.",
+                "That's fascinating. There's clearly a lot to unpack here.",
+                "I love how you've framed that. Let's dig deeper.",
+                "This is an important perspective. Let's continue.",
+            ]
+        else:
+            followups = [
+                "Excellent points from all of you. Let's explore this further.",
+                "That's fascinating. There's clearly a lot to unpack here.",
+                "I love how you've all framed that. Let's dig deeper.",
+                "These are important perspectives. Let's continue.",
+            ]
         
         turn = self.state.current_turn
         followup_index = turn % len(followups)
@@ -431,11 +441,9 @@ class ConversationService:
         print(self.formatter.format_message(host_message))
         time.sleep(0.5)
         
-        # Have one or both guests respond to user input
-        self._guest_respond(0)
-        
-        if len(self.guest_names) > 1:
-            self._guest_respond(1)
+        # Have all guests respond to user input
+        for guest_index in range(len(self.guest_names)):
+            self._guest_respond(guest_index)
     
     def _generate_host_acknowledgment(self, user_input: str) -> str:
         """Generate host acknowledgment of user input.

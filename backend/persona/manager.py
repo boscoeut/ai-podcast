@@ -41,13 +41,15 @@ class PersonaConfigManager:
             self.persona_sets = self.loader.load_all_persona_sets()
             
             # Validate all loaded persona sets
-            for set_id, persona_set in self.persona_sets.items():
+            # Create a list of set_ids to avoid modifying dict during iteration
+            invalid_sets = []
+            
+            for set_id, persona_set in list(self.persona_sets.items()):
                 try:
                     validation_result = self.validator.validate_persona_set(persona_set)
                     if validation_result['status'] == 'error':
                         logger.error(f"Validation failed for persona set '{set_id}': {validation_result['errors']}")
-                        # Remove invalid persona set
-                        del self.persona_sets[set_id]
+                        invalid_sets.append(set_id)
                     else:
                         if validation_result['warnings']:
                             logger.warning(f"Validation warnings for '{set_id}': {validation_result['warnings']}")
@@ -55,9 +57,12 @@ class PersonaConfigManager:
                         
                 except ValueError as e:
                     logger.error(f"Validation error for persona set '{set_id}': {e}")
-                    # Remove invalid persona set
-                    if set_id in self.persona_sets:
-                        del self.persona_sets[set_id]
+                    invalid_sets.append(set_id)
+            
+            # Remove invalid persona sets after iteration
+            for set_id in invalid_sets:
+                if set_id in self.persona_sets:
+                    del self.persona_sets[set_id]
                         
         except Exception as e:
             logger.error(f"Error loading persona sets: {e}")
@@ -150,10 +155,11 @@ class PersonaConfigManager:
             set_id: The persona set identifier
             
         Returns:
-            list: List of guest persona configurations
+            list: List of guest persona configurations (full guest pool)
         """
         persona_set = self.get_persona_set(set_id)
-        return persona_set['guests']
+        # Support both 'guest_pool' (new) and 'guests' (old) formats
+        return persona_set.get('guest_pool', persona_set.get('guests', []))
     
     def get_persona_by_id(self, set_id: str, persona_id: str) -> Optional[Dict]:
         """
@@ -172,8 +178,9 @@ class PersonaConfigManager:
         if persona_set['host']['id'] == persona_id:
             return persona_set['host']
         
-        # Check guests
-        for guest in persona_set['guests']:
+        # Check guests (support both guest_pool and guests)
+        guest_list = persona_set.get('guest_pool', persona_set.get('guests', []))
+        for guest in guest_list:
             if guest['id'] == persona_id:
                 return guest
         
@@ -201,6 +208,43 @@ class PersonaConfigManager:
             logger.error(f"Error reloading persona set '{set_id}': {e}")
             raise
     
+    def select_guests(self, persona_set: Dict, guest_count: Optional[int] = None) -> List[Dict]:
+        """
+        Select guests from the guest pool based on user-specified count.
+        
+        Args:
+            persona_set: The active persona set configuration
+            guest_count: Number of guests (1-5). If None, uses default from config.
+            
+        Returns:
+            List of selected guest persona configurations
+            
+        Raises:
+            ValueError: If guest count is invalid
+        """
+        # Get guest pool (support both formats)
+        guest_pool = persona_set.get('guest_pool', persona_set.get('guests', []))
+        
+        if not guest_pool:
+            raise ValueError("No guests available in persona set")
+        
+        # Use default guest count if not specified
+        if guest_count is None:
+            guest_count = persona_set.get('default_guest_count', 2)
+        
+        # Validate guest count
+        if guest_count < 1:
+            raise ValueError("Guest count must be at least 1")
+        if guest_count > len(guest_pool):
+            raise ValueError(f"Guest count cannot exceed available guests ({len(guest_pool)})")
+        
+        # Select first N guests from pool
+        # In future, could implement smarter selection based on topic/expertise
+        selected_guests = guest_pool[:guest_count]
+        
+        logger.info(f"Selected {guest_count} guests from pool of {len(guest_pool)}")
+        return selected_guests
+    
     def get_persona_set_info(self, set_id: str) -> Dict:
         """
         Get summary information about a persona set.
@@ -213,6 +257,9 @@ class PersonaConfigManager:
         """
         persona_set = self.get_persona_set(set_id)
         
+        # Support both guest_pool and guests formats
+        guest_list = persona_set.get('guest_pool', persona_set.get('guests', []))
+        
         return {
             'set_id': persona_set['set_id'],
             'set_name': persona_set['set_name'],
@@ -220,7 +267,9 @@ class PersonaConfigManager:
             'domains': persona_set.get('domains', []),
             'host_name': persona_set['host']['name'],
             'host_title': persona_set['host']['title'],
-            'guest_count': len(persona_set['guests']),
-            'guest_names': [guest['name'] for guest in persona_set['guests']],
-            'guest_titles': [guest['title'] for guest in persona_set['guests']]
+            'guest_pool_size': len(guest_list),
+            'default_guest_count': persona_set.get('default_guest_count', 2),
+            'guest_count': len(guest_list),  # Keep for backward compatibility
+            'guest_names': [guest['name'] for guest in guest_list],
+            'guest_titles': [guest['title'] for guest in guest_list]
         }

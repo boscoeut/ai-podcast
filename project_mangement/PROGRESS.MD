@@ -53,3 +53,11 @@
 **Summary**: Enhanced conversation flow with natural pause points after each agent speaks, allowing users to chime in at any moment during the conversation. Implemented platform-specific timeout behavior (2-second auto-continue on macOS/Linux, manual on Windows) and simplified the interface by making pauses the only interaction mode. This makes the podcast experience feel like a live, interactive conversation rather than a passive listening experience.
 
 ---
+
+## 2025-10-05 - Dynamic Multiple Guest Selection Implementation
+
+**Phase**: Phase 1 - MVP Enhancement
+
+**Summary**: Implemented dynamic guest selection allowing users to choose 1-5 guests per podcast session from an expanded guest pool of 5 distinct personas (added Sam Martinez, Priya Kapoor, and Marcus Wu to technology domain). Users now specify guest count at startup, and the system dynamically initializes only selected guests and adapts turn-taking logic accordingly. This enables flexible conversation formats from intimate interviews (1 guest) to diverse panel discussions (5 guests) while maintaining backward compatibility with existing 2-guest default.
+
+---

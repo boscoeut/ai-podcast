@@ -17,9 +17,11 @@ class PersonaValidator:
         'set_id': str,
         'set_name': str,
         'description': str,
-        'host': dict,
-        'guests': list
+        'host': dict
     }
+    
+    # Optional fields (at least one must be present)
+    GUEST_FIELDS = ['guests', 'guest_pool']  # Support both old and new formats
     
     # Required fields for persona configuration
     REQUIRED_PERSONA_FIELDS = {
@@ -69,6 +71,11 @@ class PersonaValidator:
             elif not isinstance(persona_set[field], field_type):
                 errors.append(f"Field '{field}' must be of type {field_type.__name__}")
         
+        # Check for guest field (either 'guests' or 'guest_pool')
+        has_guest_field = any(field in persona_set for field in self.GUEST_FIELDS)
+        if not has_guest_field:
+            errors.append(f"Missing guest field: must have either 'guests' or 'guest_pool'")
+        
         if errors:
             raise ValueError(f"Persona set validation failed: {'; '.join(errors)}")
         
@@ -80,11 +87,13 @@ class PersonaValidator:
         except ValueError as e:
             errors.append(f"Host validation failed: {str(e)}")
         
-        # Validate guest personas
-        if not isinstance(persona_set['guests'], list) or len(persona_set['guests']) == 0:
+        # Validate guest personas (support both 'guests' and 'guest_pool')
+        guest_list = persona_set.get('guest_pool', persona_set.get('guests', []))
+        
+        if not isinstance(guest_list, list) or len(guest_list) == 0:
             errors.append("At least one guest persona is required")
         else:
-            for i, guest in enumerate(persona_set['guests']):
+            for i, guest in enumerate(guest_list):
                 try:
                     guest_result = self.validate_persona_config(guest, 'guest')
                     if guest_result['status'] == 'error':
@@ -94,7 +103,7 @@ class PersonaValidator:
         
         # Check for duplicate IDs
         all_ids = [persona_set['host']['id']]
-        all_ids.extend([guest['id'] for guest in persona_set['guests']])
+        all_ids.extend([guest['id'] for guest in guest_list])
         if len(all_ids) != len(set(all_ids)):
             errors.append("Duplicate persona IDs found")
         
