@@ -44,8 +44,11 @@ This document contains the technical specifications, architecture, and implement
 ### TR4: Conversation Engine
 - **TR4.1**: System shall implement turn-based conversation logic
 - **TR4.2**: System shall track conversation state (topic, participants, turn order)
-- **TR4.3**: System shall implement automatic dialogue generation without user intervention
-- **TR4.4**: System shall integrate user input into conversation context
+- **TR4.3**: System shall dynamically adjust turn-taking logic based on number of active guests (1-5)
+- **TR4.4**: System shall implement automatic dialogue generation without user intervention
+- **TR4.5**: System shall integrate user input into conversation context
+- **TR4.6**: System shall prompt user for guest count (1-5) during podcast initialization
+- **TR4.7**: System shall validate guest count input and handle invalid entries gracefully
 
 ### TR5: Command Interface
 - **TR5.1**: Application shall run via command-line interface (CLI)
@@ -79,6 +82,10 @@ This document contains the technical specifications, architecture, and implement
 - **TR8.6**: System shall validate persona configurations on load
 - **TR8.7**: System shall provide at least 3 pre-configured persona sets (technology, sports, business)
 - **TR8.8**: System shall support custom user-created persona configurations
+- **TR8.9**: Each persona set shall define a guest pool of at least 5 distinct guest personas
+- **TR8.10**: System shall implement dynamic guest selection based on user-specified count (1-5)
+- **TR8.11**: Guest selection algorithm shall prioritize diversity of perspectives and expertise
+- **TR8.12**: System shall initialize only the selected number of guest agents to optimize performance
 
 ---
 
@@ -251,7 +258,8 @@ This document contains the technical specifications, architecture, and implement
     "description": str,
     "domains": List[str],  # e.g., ["AI", "tech", "software"]
     "host": PersonaConfig,
-    "guests": List[PersonaConfig]  # 2-3 guests
+    "guest_pool": List[PersonaConfig],  # Pool of 5+ guests for dynamic selection
+    "default_guest_count": int  # Default number of guests (2-3) if user doesn't specify
 }
 ```
 
@@ -282,12 +290,14 @@ This document contains the technical specifications, architecture, and implement
 {
     "topic": str,
     "persona_set_id": str,  # Active persona set
+    "guest_count": int,  # Number of active guests (1-5)
     "status": "initializing" | "active" | "ending" | "completed",
     "current_turn": int,
     "speakers": List[str],
     "active_personas": {
         "host": PersonaConfig,
-        "guests": List[PersonaConfig]
+        "guests": List[PersonaConfig],  # Dynamically selected from pool
+        "guest_pool": List[PersonaConfig]  # Full pool available
     },
     "history": List[Message],
     "user_engaged": bool
@@ -464,7 +474,9 @@ host:
     - "I love how you framed that..."
     - "To our listeners wondering about..."
 
-guests:
+default_guest_count: 2  # Default if user doesn't specify
+
+guest_pool:  # Pool of 5 guests, system selects based on user input
   - id: maya_chen
     name: "Dr. Maya Chen"
     role: guest
@@ -552,6 +564,138 @@ guests:
       - "Here's what actually works..."
       - "We implemented this at my company..."
       - "The practical reality is..."
+  
+  - id: sam_martinez
+    name: "Sam Martinez"
+    role: guest
+    title: "Creative Technologist & Futurist"
+    personality_traits:
+      - creative
+      - unconventional
+      - philosophical
+      - visionary
+    speaking_style: "Metaphorical and thought-provoking. Asks 'what if' questions and explores future scenarios."
+    expertise_area:
+      - future of technology
+      - creative applications
+      - philosophical implications
+      - innovation trends
+    background: "Creative technologist exploring unconventional applications of AI and future scenarios."
+    system_instruction: |
+      You are Sam Martinez, a creative technologist with a philosophical bent.
+      
+      Your perspective is:
+      - Creative and unconventional
+      - Future-oriented and speculative
+      - Philosophical about implications
+      - Big-picture thinking
+      
+      Your style:
+      - Use metaphors and analogies
+      - Ask "what if" questions
+      - Explore future scenarios
+      - Connect technology to human experience
+      - Challenge conventional thinking
+      
+      Keep responses thought-provoking yet conversational (2-4 sentences).
+    model_parameters:
+      temperature: 0.85
+      top_p: 0.92
+      top_k: 42
+      max_output_tokens: 500
+    example_phrases:
+      - "What if we reimagine..."
+      - "Imagine a future where..."
+      - "This reminds me of..."
+      - "The real question is..."
+  
+  - id: priya_kapoor
+    name: "Priya Kapoor"
+    role: guest
+    title: "Engineering Architect"
+    personality_traits:
+      - technical
+      - systematic
+      - detail-oriented
+      - pragmatic
+    speaking_style: "Precise and technical. Discusses architecture, scalability, and trade-offs."
+    expertise_area:
+      - system architecture
+      - scalability
+      - technical design
+      - infrastructure
+    background: "Senior engineering architect with expertise in building large-scale AI systems."
+    system_instruction: |
+      You are Priya Kapoor, a senior engineering architect specializing in AI systems.
+      
+      Your perspective is:
+      - Technical and architecture-focused
+      - Systematic and methodical
+      - Concerned with scalability and reliability
+      - Trade-off aware
+      
+      Your style:
+      - Discuss technical implementation details
+      - Consider scalability and performance
+      - Evaluate trade-offs
+      - Focus on system design
+      - Practical technical constraints
+      
+      Keep responses technical yet accessible (2-5 sentences).
+    model_parameters:
+      temperature: 0.65
+      top_p: 0.87
+      top_k: 32
+      max_output_tokens: 550
+    example_phrases:
+      - "From an architecture perspective..."
+      - "The technical challenge is..."
+      - "We need to consider scalability..."
+      - "The trade-off here is..."
+  
+  - id: marcus_wu
+    name: "Marcus Wu"
+    role: guest
+    title: "UX Designer & Human-AI Interaction Expert"
+    personality_traits:
+      - empathetic
+      - user-focused
+      - thoughtful
+      - accessible
+    speaking_style: "Empathetic and user-centric. Focuses on human experience and accessibility."
+    expertise_area:
+      - user experience design
+      - human-AI interaction
+      - accessibility
+      - design thinking
+    background: "UX designer specializing in human-AI interaction and inclusive design."
+    system_instruction: |
+      You are Marcus Wu, a UX designer focused on human-AI interaction.
+      
+      Your perspective is:
+      - User-centric and empathetic
+      - Focused on accessibility and inclusion
+      - Design thinking approach
+      - Human experience first
+      
+      Your style:
+      - Center human needs and experiences
+      - Consider accessibility and inclusion
+      - Discuss usability and adoption
+      - Empathize with end users
+      - Balance technology with humanity
+      
+      Keep responses human-focused and accessible (2-4 sentences).
+    model_parameters:
+      temperature: 0.75
+      top_p: 0.9
+      top_k: 38
+      max_output_tokens: 500
+    example_phrases:
+      - "From a user's perspective..."
+      - "We need to think about accessibility..."
+      - "The human experience here is..."
+      - "How will people actually use this..."
 ```
 
 #### personas/sports.yaml
@@ -872,6 +1016,33 @@ class PersonaConfigManager:
         set_id = list(self.persona_sets.keys())[choice]
         return self.persona_sets[set_id]
     
+    def select_guests(self, persona_set: Dict, guest_count: int = None) -> List[Dict]:
+        """
+        Select guests from the guest pool based on user-specified count.
+        
+        Args:
+            persona_set: The active persona set configuration
+            guest_count: Number of guests (1-5). If None, prompts user.
+            
+        Returns:
+            List of selected guest persona configurations
+        """
+        guest_pool = persona_set.get('guest_pool', persona_set.get('guests', []))
+        
+        if guest_count is None:
+            default_count = persona_set.get('default_guest_count', 2)
+            print(f"\nHow many guests would you like for this podcast? (1-{len(guest_pool)})")
+            print(f"Default: {default_count}")
+            guest_count_input = input(f"Guest count [{default_count}]: ").strip()
+            guest_count = int(guest_count_input) if guest_count_input else default_count
+        
+        # Validate guest count
+        if guest_count < 1 or guest_count > len(guest_pool):
+            raise ValueError(f"Guest count must be between 1 and {len(guest_pool)}")
+        
+        # Select first N guests from pool (in future, could implement smarter selection)
+        return guest_pool[:guest_count]
+    
     def create_agent_from_persona(self, persona_config: Dict, model: str = "gemini-2.5-flash"):
         """
         Create an ADK Agent from persona configuration.
@@ -1001,7 +1172,7 @@ mypy>=1.5.0
 ## Implementation Phases
 
 ### Phase 1: MVP (Minimum Viable Product) - Week 1-2
-**Goal**: Basic working podcast with configurable personas
+**Goal**: Basic working podcast with configurable personas and dynamic guest selection
 
 **Tasks**:
 - Set up ADK project structure
@@ -1038,6 +1209,8 @@ mypy>=1.5.0
   - Create main entry point (`backend/main.py`)
   - **Add persona set selection (interactive or CLI arg)**
   - Add topic input prompt
+  - **Add guest count selection prompt (1-5 guests)**
+  - **Implement guest selection logic from pool**
   - Format and display agent responses with persona names
 - Add basic stop command
   - Detect exit keywords
@@ -1048,17 +1221,21 @@ mypy>=1.5.0
 
 **Deliverables**:
 - Working Python application using ADK
-- Persona configuration system
-- At least 2 persona sets (technology + 1 more)
-- Basic conversation flow (5-10 turns)
+- Persona configuration system with guest pool support
+- Dynamic guest selection (1-5 guests)
+- At least 1 complete persona set with 5 guests (technology)
+- Basic conversation flow (5-10 turns) adapting to guest count
 - README with setup instructions
 - `.env.example` template
 
 **Success Criteria**:
 - Application runs without crashes
 - Users can select between persona sets
+- Users can specify guest count (1-5)
+- System dynamically initializes selected number of guests
 - All agents respond with distinct voices appropriate to domain
 - Persona configurations are loaded correctly
+- Turn-taking logic adapts to number of guests
 - User can start and stop conversations
 - Conversation stays loosely on topic
 
@@ -1081,9 +1258,10 @@ mypy>=1.5.0
   - Maintain topic context
   - Store turn count and participants
 - Improve turn-taking logic for natural flow
-  - Implement dynamic turn allocation
+  - Implement dynamic turn allocation based on active guest count
   - Add natural transitions
   - Prevent repetitive patterns
+  - Optimize for different guest counts (1, 2, 3, 4, or 5 guests)
 - Add conversation history context
   - Pass relevant history to agents
   - Implement context window management
@@ -1114,10 +1292,10 @@ mypy>=1.5.0
 
 **Tasks**:
 - **Expand persona library**
-  - Complete all 3 default persona sets (technology, sports, business)
-  - Add optional 3rd guest to persona sets
+  - Complete all 3 default persona sets with 5 guests each (technology, sports, business)
+  - Ensure each persona set has diverse perspectives in guest pool
   - Create template for custom persona creation
-  - Document persona creation guide
+  - Document persona creation guide with guest pool examples
 - Optimize model parameters for each persona
   - Fine-tune temperature, top_p values across all domains
   - Test response quality for each persona
@@ -1132,18 +1310,20 @@ mypy>=1.5.0
 - Add configuration file for easy customization
   - Allow customization of:
     - Default persona set
-    - Number of guests (2 or 3)
+    - Default guest count (1-5)
+    - Guest count range (min/max)
     - Turn count before user prompt
     - Model parameters
     - Conversation behavior
-- Comprehensive testing with various topics
+- Comprehensive testing with various topics and guest counts
   - Test all persona sets with appropriate topics
+  - **Test with different guest counts (1, 2, 3, 4, 5)**
   - Test persona switching
-  - Test custom persona creation
-  - Test edge cases
+  - Test custom persona creation with guest pools
+  - Test edge cases (invalid guest count, empty pool, etc.)
   - Test with different conversation lengths
   - Test error scenarios
-  - Performance testing
+  - Performance testing with varying guest counts
 - Documentation and examples
   - Complete README with examples from all persona sets
   - Persona creation guide
@@ -1153,22 +1333,24 @@ mypy>=1.5.0
 
 **Deliverables**:
 - Polished, production-ready application
-- 3+ complete persona sets
-- Persona creation template and guide
-- Configuration documentation
-- User guide with example interactions from all domains
-- Complete test suite
+- 3+ complete persona sets with 5 guests each
+- Persona creation template and guide with guest pool examples
+- Configuration documentation including guest count settings
+- User guide with example interactions from all domains and guest counts
+- Complete test suite including dynamic guest selection
 - Release v1.0
 
 **Success Criteria**:
 - Application is stable and reliable
-- All persona sets work seamlessly
-- Users can easily create custom personas
+- All persona sets work seamlessly with 1-5 guests
+- Dynamic guest selection works smoothly
+- Users can easily create custom personas with guest pools
 - Documentation is comprehensive
 - Easy for new users to set up and run
 - Configurable without code changes
 - Test coverage >80%
-- Persona distinctiveness verified across all sets
+- Persona distinctiveness verified across all sets and guest counts
+- Turn-taking logic scales well from 1 to 5 guests
 
 ---
 
@@ -1186,9 +1368,9 @@ mypy>=1.5.0
   - Validate instruction format
   - Test instruction variable substitution
 - **Turn-taking logic**
-  - Test turn rotation algorithms
-  - Verify fair distribution of speaking turns
-  - Test edge cases (1 guest, 5 guests, etc.)
+  - Test turn rotation algorithms with different guest counts
+  - Verify fair distribution of speaking turns across 1-5 guests
+  - Test edge cases (1 guest only, 5 guests max, invalid counts)
 - **User input parsing**
   - Test various input formats
   - Validate command detection
@@ -1239,18 +1421,20 @@ mypy>=1.5.0
 ### Test Scenarios
 
 #### 1. Happy Path
-**Description**: User provides topic, listens to conversation, asks question, stops podcast
+**Description**: User provides topic, selects guest count, listens to conversation, asks question, stops podcast
 
 **Steps**:
 1. Launch application
 2. Enter topic: "The future of education"
-3. Read 3 conversation rounds (9 turns)
-4. At prompt, enter question: "What about rural areas?"
-5. Read 2 more conversation rounds
-6. Enter "stop" command
-7. Read closing message
+3. Enter guest count: 3
+4. Verify 3 guests are introduced
+5. Read 3 conversation rounds (host + 3 guests)
+6. At prompt, enter question: "What about rural areas?"
+7. Read 2 more conversation rounds
+8. Enter "stop" command
+9. Read closing message
 
-**Expected Result**: Smooth flow, relevant conversation, appropriate response to user question, graceful exit
+**Expected Result**: Smooth flow, 3 guests participating, relevant conversation, appropriate response to user question, graceful exit
 
 ---
 
@@ -1288,6 +1472,12 @@ mypy>=1.5.0
 **Test Cases**:
 - **Empty topic**: Press Enter without entering topic
   - Expected: Prompt user again with error message
+- **Invalid guest count**: Enter 0, 6, -1, or "abc"
+  - Expected: Prompt user again with validation message
+- **Minimum guests (1)**: Enter 1 guest
+  - Expected: Works with single guest, different conversation flow
+- **Maximum guests (5)**: Enter 5 guests
+  - Expected: Works with 5 guests, all get fair speaking time
 - **Very long topic**: Enter 500+ character topic description
   - Expected: Accept and summarize appropriately
 - **Stop command during introduction**: Enter "stop" during host's opening
@@ -1795,6 +1985,7 @@ class RateLimiter:
 | 1.1 | 2025-10-02 | Added configurable persona system for domain-specific hosts and guests |
 | 1.2 | 2025-10-02 | Reorganized file structure: backend/, database/, ui/; adopted Google ADK agent structure |
 | 1.3 | 2025-10-02 | Renamed docs/ folder to documentation/ for better clarity |
+| 1.4 | 2025-10-05 | Added dynamic guest selection (TR4.6-4.7, TR8.9-8.12); guest pool model with 5+ personas; updated data models, persona manager, and all phases |
 
 ---
 

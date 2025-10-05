@@ -70,7 +70,10 @@ Traditional podcasts are passive listening experiences where users cannot intera
 - **FR1.1**: System shall prompt user to enter a topic when starting a new podcast
 - **FR1.2**: System shall accept free-form text input for topic specification
 - **FR1.3**: System shall validate that a topic has been provided before proceeding
-- **FR1.4**: AI Host shall acknowledge the topic and introduce the podcast episode
+- **FR1.4**: System shall prompt user to specify the number of guests for the podcast
+- **FR1.5**: System shall validate that guest count is within supported range (1-5 guests)
+- **FR1.6**: System shall dynamically select and initialize the appropriate number of guest personas from the active persona set
+- **FR1.7**: AI Host shall acknowledge the topic and introduce the podcast episode with the selected guests
 
 ### FR2: AI Host Persona
 - **FR2.1**: AI Host shall have a defined persona with consistent personality traits
@@ -86,13 +89,16 @@ Traditional podcasts are passive listening experiences where users cannot intera
 - Role: Facilitates discussion, ensures all voices are heard, summarizes key points
 
 ### FR3: AI Guest Personas
-- **FR3.1**: System shall support at least 2-3 distinct AI guest personas
-- **FR3.2**: Each guest shall have unique personality traits and perspectives
-- **FR3.3**: Guests shall offer different viewpoints on the topic
-- **FR3.4**: Guests shall interact with each other naturally (agreeing, debating, building on ideas)
-- **FR3.5**: Guests shall respond to user input when relevant
+- **FR3.1**: System shall support 1-5 guest personas per podcast session
+- **FR3.2**: Each persona set shall include a pool of at least 5 distinct guest personas with different expertise
+- **FR3.3**: System shall allow users to specify how many guests (1-5) to include in each podcast
+- **FR3.4**: System shall dynamically select guest personas from the pool based on user-specified count
+- **FR3.5**: Each guest shall have unique personality traits and perspectives
+- **FR3.6**: Guests shall offer different viewpoints on the topic
+- **FR3.7**: Guests shall interact with each other naturally (agreeing, debating, building on ideas)
+- **FR3.8**: Guests shall respond to user input when relevant
 
-**Suggested Guest Personas**:
+**Suggested Guest Personas** (Pool of 5 for Technology Domain):
 
 **Guest 1 - Dr. Maya Chen**
 - Style: Academic, analytical, evidence-based thinker
@@ -104,10 +110,22 @@ Traditional podcasts are passive listening experiences where users cannot intera
 - Perspective: Real-world application and implementation
 - Speech Pattern: Direct, uses examples from experience
 
-**Guest 3 - Sam Martinez (Optional for expanded conversations)**
+**Guest 3 - Sam Martinez**
 - Style: Creative, unconventional, big-picture thinker
 - Perspective: Philosophical and future-oriented
 - Speech Pattern: Metaphorical, asks "what if" questions
+
+**Guest 4 - Priya Kapoor**
+- Style: Engineering-focused, technical problem solver
+- Perspective: Implementation details and architecture
+- Speech Pattern: Precise, discusses technical trade-offs
+
+**Guest 5 - Marcus Wu**
+- Style: User-centric, design-thinking advocate
+- Perspective: Human experience and usability
+- Speech Pattern: Empathetic, focuses on user needs and impact
+
+*Note: Users select 1-5 guests per podcast session from this pool*
 
 ### FR4: Conversation Management
 - **FR4.1**: System shall maintain conversation flow without requiring constant user input
@@ -142,23 +160,33 @@ Traditional podcasts are passive listening experiences where users cannot intera
 - **FR8.4**: System shall provide default persona sets for common domains
 - **FR8.5**: Users shall be able to create custom persona configurations without modifying code
 - **FR8.6**: Each persona set shall include appropriate expertise, speaking styles, and personality traits for the domain
+- **FR8.7**: Each persona set shall define a guest pool of at least 5 guest personas to support flexible guest counts (1-5)
+- **FR8.8**: System shall support dynamic guest selection from the pool based on user-specified count at podcast startup
 
 **Example Persona Sets by Domain**:
 
 **Technology Domain (Default)**
 - Host: Alex Rivera - Tech journalist and enthusiastic facilitator
-- Guest 1: Dr. Maya Chen - AI researcher and academic
-- Guest 2: Jordan Blake - Tech entrepreneur
+- Guest Pool (5 personas, user selects 1-5):
+  - Dr. Maya Chen - AI researcher and academic
+  - Jordan Blake - Tech entrepreneur
+  - Sam Martinez - Creative technologist
+  - Priya Kapoor - Engineering architect
+  - Marcus Wu - UX/design expert
 
 **Sports Domain**
 - Host: Sam "The Analyst" Rodriguez - Sports commentator with deep knowledge
-- Guest 1: Coach Michelle Turner - Former athlete and strategy expert
-- Guest 2: Chris Bennett - Sports journalist covering major leagues
+- Guest Pool (5 personas, user selects 1-5):
+  - Coach Michelle Turner - Former athlete and strategy expert
+  - Chris Bennett - Sports journalist covering major leagues
+  - Additional guests to be defined
 
 **Business/Finance Domain**
 - Host: Dana Morgan - Business news anchor
-- Guest 1: Robert Chen - Investment strategist
-- Guest 2: Lisa Park - Startup founder and CEO
+- Guest Pool (5 personas, user selects 1-5):
+  - Robert Chen - Investment strategist
+  - Lisa Park - Startup founder and CEO
+  - Additional guests to be defined
 
 ---
 
@@ -192,6 +220,22 @@ START
            │
            ▼
       [User enters topic]
+           │
+           ▼
+┌─────────────────────┐
+│ Request Guest Count │
+│ "How many guests    │
+│  (1-5)?"            │
+└──────────┬──────────┘
+           │
+           ▼
+      [User enters count]
+           │
+           ▼
+┌─────────────────────┐
+│ System Selects      │
+│ Guests from Pool    │
+└──────────┬──────────┘
            │
            ▼
 ┌─────────────────────┐
@@ -257,16 +301,23 @@ Welcome! What topic would you like to discuss today?
 
 > The future of work in the age of AI
 
+How many guests would you like for this podcast? (1-5)
+
+> 3
+
+Great! I'll invite 3 experts to join the discussion.
+
 =================================================
 
 🎙️ ALEX RIVERA (Host):
 Welcome to AI-Podcast! I'm your host, Alex Rivera, and today we're diving 
 into a fascinating topic: The Future of Work in the Age of AI.
 
-I'm joined by two incredible guests. First, Dr. Maya Chen, researcher and 
-academic who studies the intersection of technology and society. And Jordan 
+I'm joined by three incredible guests. First, Dr. Maya Chen, researcher and 
+academic who studies the intersection of technology and society. Jordan 
 Blake, entrepreneur and practical thinker who's been implementing AI in 
-real-world business settings.
+real-world business settings. And Sam Martinez, creative technologist with 
+a philosophical perspective on the future.
 
 Let's jump right in. Maya, from your research perspective, how do you see 
 AI fundamentally changing the nature of work?
@@ -513,6 +564,7 @@ For detailed implementation phases, technology stack, testing strategy, and deve
 | 1.1 | 2025-10-02 | AI Assistant | Moved technical specifications to separate document |
 | 1.2 | 2025-10-02 | AI Assistant | Added configurable persona system (FR8) for domain-specific hosts/guests |
 | 1.3 | 2025-10-02 | AI Assistant | Renamed docs/ folder to documentation/ for better clarity |
+| 1.4 | 2025-10-05 | AI Assistant | Added dynamic guest count selection (FR1.4-1.6, FR3 expansion, FR8.7-8.8); expanded guest pool to 5 personas; updated user interaction flow |
 
 **Document Status**: Draft for Review  
 **Next Review Date**: TBD  
